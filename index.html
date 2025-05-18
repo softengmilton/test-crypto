@@ -2,10 +2,10 @@
 <html lang="en">
 
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Cipher Visualizer</title>
-    <link href="https://fonts.googleapis.com/css2?family=Orbitron&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron&display=swap" rel="stylesheet" />
     <style>
         * {
             margin: 0;
@@ -62,6 +62,7 @@
             padding: 10px 20px;
             border-radius: 5px;
             margin-top: 10px;
+            margin-right: 10px;
             cursor: pointer;
             font-weight: bold;
             transition: transform 0.3s;
@@ -97,118 +98,182 @@
 <body>
     <h1>Cipher Animation Visualizer</h1>
     <div class="cipher-container">
+        <!-- Caesar Cipher -->
         <div class="cipher" id="caesar">
             <h2>Caesar Cipher</h2>
-            <input type="text" id="caesarInput" placeholder="Enter text...">
-            <input type="text" id="caesarShift" placeholder="Enter shift (e.g., 3)...">
+            <input type="text" id="caesarInput" placeholder="Enter text..." />
+            <input type="text" id="caesarShift" placeholder="Enter shift (e.g., 3)..." />
             <button onclick="runCaesar()">Encrypt</button>
+            <button onclick="runCaesarDecrypt()">Decrypt</button>
             <div class="output" id="caesarOutput"></div>
         </div>
 
-        <div class="cipher" id="vernam">
-            <h2>Vernam Cipher</h2>
-            <input type="text" id="vernamInput" placeholder="Enter text...">
-            <input type="text" id="vernamKey" placeholder="Enter key (same length as text)...">
-            <button onclick="runVernam()">Encrypt</button>
-            <div class="output" id="vernamOutput"></div>
+        <!-- Rail Fence Cipher -->
+        <div class="cipher" id="railFence">
+            <h2>Rail Fence Cipher</h2>
+            <input type="text" id="railInput" placeholder="Enter text..." />
+            <input type="text" id="railKey" placeholder="Enter number of rails..." />
+            <button onclick="runRailEncrypt()">Encrypt</button>
+            <button onclick="runRailDecrypt()">Decrypt</button>
+            <div class="output" id="railOutput"></div>
         </div>
 
-        <div class="cipher" id="playfair">
-            <h2>Playfair Cipher</h2>
-            <input type="text" id="playfairInput" placeholder="Enter text...">
-            <input type="text" id="playfairKey" placeholder="Enter keyword...">
-            <button onclick="runPlayfair()">Encrypt</button>
-            <div class="output" id="playfairOutput"></div>
+        <!-- Vigenère Cipher -->
+        <div class="cipher" id="vigenere">
+            <h2>Vigenère Cipher</h2>
+            <input type="text" id="vigenereInput" placeholder="Enter text..." />
+            <input type="text" id="vigenereKey" placeholder="Enter keyword..." />
+            <button onclick="runVigenereEncrypt()">Encrypt</button>
+            <button onclick="runVigenereDecrypt()">Decrypt</button>
+            <div class="output" id="vigenereOutput"></div>
         </div>
     </div>
 
     <script>
-        function animateText(target, text, interval = 50) {
-            target.innerHTML = '';
+        function animateText(element, text) {
+            element.textContent = '';
             let i = 0;
-            const anim = setInterval(() => {
+            function type() {
                 if (i < text.length) {
-                    target.innerHTML += text[i++];
-                } else {
-                    clearInterval(anim);
+                    element.textContent += text.charAt(i);
+                    i++;
+                    setTimeout(type, 50);
                 }
-            }, interval);
+            }
+            type();
         }
 
+        // Caesar Cipher
         function runCaesar() {
-            const input = document.getElementById('caesarInput').value.toUpperCase();
-            const shift = parseInt(document.getElementById('caesarShift').value);
-            let output = '';
-            for (let i = 0; i < input.length; i++) {
-                const char = input[i];
-                if (char >= 'A' && char <= 'Z') {
-                    const code = ((char.charCodeAt(0) - 65 + shift) % 26) + 65;
-                    output += String.fromCharCode(code);
-                } else {
-                    output += char;
-                }
-            }
-            animateText(document.getElementById('caesarOutput'), output);
+            const input = document.getElementById('caesarInput').value;
+            const shift = parseInt(document.getElementById('caesarShift').value) || 0;
+            const result = caesarEncrypt(input, shift);
+            animateText(document.getElementById('caesarOutput'), result);
         }
 
-        function runVernam() {
-            const input = document.getElementById('vernamInput').value.toUpperCase();
-            const key = document.getElementById('vernamKey').value.toUpperCase();
-            let output = '';
-            if (input.length !== key.length) {
-                animateText(document.getElementById('vernamOutput'), 'Key must match text length');
-                return;
-            }
-            for (let i = 0; i < input.length; i++) {
-                const charCode = input.charCodeAt(i) ^ key.charCodeAt(i);
-                output += String.fromCharCode(charCode + 65);
-            }
-            animateText(document.getElementById('vernamOutput'), output);
+        function runCaesarDecrypt() {
+            const input = document.getElementById('caesarInput').value;
+            const shift = parseInt(document.getElementById('caesarShift').value) || 0;
+            const result = caesarEncrypt(input, -shift);
+            animateText(document.getElementById('caesarOutput'), result);
         }
 
-        function runPlayfair() {
-            const text = document.getElementById('playfairInput').value.toUpperCase().replace(/J/g, 'I').replace(/[^A-Z]/g, '');
-            const key = document.getElementById('playfairKey').value.toUpperCase().replace(/J/g, 'I');
-            let matrix = [];
-            let seen = new Set();
-            let preparedKey = (key + "ABCDEFGHIJKLMNOPQRSTUVWXYZ").replace(/[^A-Z]/g, '');
-            for (let ch of preparedKey) {
-                if (!seen.has(ch)) {
-                    seen.add(ch);
-                    matrix.push(ch);
+        function caesarEncrypt(str, shift) {
+            return str.split('').map(char => {
+                if (char.match(/[a-z]/i)) {
+                    const base = char === char.toUpperCase() ? 65 : 97;
+                    return String.fromCharCode((char.charCodeAt(0) - base + shift + 26) % 26 + base);
                 }
-            }
-            const grid = [];
-            for (let i = 0; i < 25; i += 5) grid.push(matrix.slice(i, i + 5));
+                return char;
+            }).join('');
+        }
 
-            let preparedText = '';
-            for (let i = 0; i < text.length; i += 2) {
-                let a = text[i];
-                let b = text[i + 1] || 'X';
-                if (a === b) b = 'X';
-                preparedText += a + b;
+        // Rail Fence Cipher
+        function runRailEncrypt() {
+            const text = document.getElementById('railInput').value;
+            const rails = parseInt(document.getElementById('railKey').value);
+            const encrypted = railFenceEncrypt(text, rails);
+            animateText(document.getElementById('railOutput'), encrypted);
+        }
+
+        function runRailDecrypt() {
+            const text = document.getElementById('railInput').value;
+            const rails = parseInt(document.getElementById('railKey').value);
+            const decrypted = railFenceDecrypt(text, rails);
+            animateText(document.getElementById('railOutput'), decrypted);
+        }
+
+        function railFenceEncrypt(text, rails) {
+            if (rails <= 1 || text.length === 0) return text;
+            let rail = Array.from({ length: rails }, () => []);
+            let dir = 1, row = 0;
+
+            for (let char of text) {
+                rail[row].push(char);
+                if (row === 0) dir = 1;
+                else if (row === rails - 1) dir = -1;
+                row += dir;
             }
 
-            let output = '';
-            for (let i = 0; i < preparedText.length; i += 2) {
-                const [a, b] = [preparedText[i], preparedText[i + 1]];
-                let [r1, c1, r2, c2] = [0, 0, 0, 0];
-                grid.forEach((row, r) => {
-                    row.forEach((val, c) => {
-                        if (val === a) [r1, c1] = [r, c];
-                        if (val === b) [r2, c2] = [r, c];
-                    });
-                });
-                if (r1 === r2) {
-                    output += grid[r1][(c1 + 1) % 5] + grid[r2][(c2 + 1) % 5];
-                } else if (c1 === c2) {
-                    output += grid[(r1 + 1) % 5][c1] + grid[(r2 + 1) % 5][c2];
+            return rail.flat().join('');
+        }
+
+        function railFenceDecrypt(cipher, rails) {
+            if (rails <= 1 || cipher.length === 0) return cipher;
+            const len = cipher.length;
+            const pattern = Array(len).fill(0);
+            let row = 0, dir = 1;
+
+            for (let i = 0; i < len; i++) {
+                pattern[i] = row;
+                if (row === 0) dir = 1;
+                else if (row === rails - 1) dir = -1;
+                row += dir;
+            }
+
+            const railCount = Array(rails).fill(0);
+            for (let p of pattern) railCount[p]++;
+
+            const railChars = [];
+            let k = 0;
+            for (let count of railCount) {
+                railChars.push(cipher.slice(k, k + count).split(''));
+                k += count;
+            }
+
+            const result = [];
+            for (let r of pattern) {
+                result.push(railChars[r].shift());
+            }
+
+            return result.join('');
+        }
+
+        // Vigenère Cipher
+        function runVigenereEncrypt() {
+            const text = document.getElementById('vigenereInput').value.toUpperCase();
+            const key = document.getElementById('vigenereKey').value.toUpperCase();
+            const result = vigenereEncrypt(text, key);
+            animateText(document.getElementById('vigenereOutput'), result);
+        }
+
+        function runVigenereDecrypt() {
+            const text = document.getElementById('vigenereInput').value.toUpperCase();
+            const key = document.getElementById('vigenereKey').value.toUpperCase();
+            const result = vigenereDecrypt(text, key);
+            animateText(document.getElementById('vigenereOutput'), result);
+        }
+
+        function vigenereEncrypt(text, key) {
+            let result = '';
+            let j = 0;
+            for (let i = 0; i < text.length; i++) {
+                const c = text[i];
+                if (c >= 'A' && c <= 'Z') {
+                    const shift = key[j % key.length].charCodeAt(0) - 65;
+                    result += String.fromCharCode(((c.charCodeAt(0) - 65 + shift) % 26) + 65);
+                    j++;
                 } else {
-                    output += grid[r1][c2] + grid[r2][c1];
+                    result += c;
                 }
             }
+            return result;
+        }
 
-            animateText(document.getElementById('playfairOutput'), output);
+        function vigenereDecrypt(text, key) {
+            let result = '';
+            let j = 0;
+            for (let i = 0; i < text.length; i++) {
+                const c = text[i];
+                if (c >= 'A' && c <= 'Z') {
+                    const shift = key[j % key.length].charCodeAt(0) - 65;
+                    result += String.fromCharCode(((c.charCodeAt(0) - 65 - shift + 26) % 26) + 65);
+                    j++;
+                } else {
+                    result += c;
+                }
+            }
+            return result;
         }
     </script>
 </body>
